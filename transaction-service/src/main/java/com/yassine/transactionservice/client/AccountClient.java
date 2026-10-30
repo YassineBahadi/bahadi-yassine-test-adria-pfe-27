@@ -13,10 +13,7 @@ import java.util.UUID;
 /**
  * @author pc
  **/
-@FeignClient(
-        name = "account-service",
-        url = "${services.account.url}"
-)
+@FeignClient(name = "account-service")
 public interface AccountClient {
 
     @GetMapping("/api/accounts/{id}")

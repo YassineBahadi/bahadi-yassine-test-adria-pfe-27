@@ -6,9 +6,14 @@ import com.yassine.transactionservice.dto.AccountResponse;
 import com.yassine.transactionservice.repository.TransactionRepository;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -24,10 +29,13 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final AccountClient accountClient;
 
+    private final CircuitBreakerFactory<?, ?> circuitBreakerFactory;
+
     public TransactionService(
-            TransactionRepository transactionRepository ,AccountClient accountClient) {
+            TransactionRepository transactionRepository , AccountClient accountClient, CircuitBreakerFactory<?, ?> circuitBreakerFactory) {
         this.transactionRepository = transactionRepository;
         this.accountClient = accountClient;
+        this.circuitBreakerFactory = circuitBreakerFactory;
     }
 
     public Transaction createTransaction(Transaction transaction) {

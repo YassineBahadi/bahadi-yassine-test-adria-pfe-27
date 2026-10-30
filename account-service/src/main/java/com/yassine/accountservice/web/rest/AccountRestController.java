@@ -49,5 +49,14 @@ public class AccountRestController {
         return accountService.updateBalance(id, amount);
     }
 
+    @PatchMapping("/{id}/debit")
+    public Account debit(
+            @PathVariable UUID id,
+            @RequestParam BigDecimal amount,
+            @RequestParam String currency
+    ) {
+        return accountService.debit(id, amount, currency);
+    }
+
 
 }

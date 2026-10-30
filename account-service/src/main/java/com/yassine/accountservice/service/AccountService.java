@@ -58,5 +58,37 @@ public class AccountService {
     }
 
 
+    public Account debit(
+            UUID id,
+            BigDecimal amount,
+            String currency) {
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Invalid amount");
+        }
+
+        Account account = getAccount(id);
+
+        if (account.getStatus() != AccountStatus.ACTIVE) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Account is blocked");
+        }
+
+        if (!account.getCurrency().equalsIgnoreCase(currency)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Currency mismatch");
+        }
+
+        if (account.getBalance().compareTo(amount) < 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Insufficient balance");
+        }
+
+        account.setBalance(account.getBalance().subtract(amount));
+
+        return accountRepository.save(account);
+    }
+
 
 }

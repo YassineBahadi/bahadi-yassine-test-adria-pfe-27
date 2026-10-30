@@ -1,7 +1,11 @@
 package com.yassine.transactionservice.service;
 
+import com.yassine.transactionservice.client.AccountClient;
 import com.yassine.transactionservice.domain.Transaction;
+import com.yassine.transactionservice.dto.AccountResponse;
 import com.yassine.transactionservice.repository.TransactionRepository;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,10 +22,12 @@ import java.util.UUID;
 @Transactional
 public class TransactionService {
     private final TransactionRepository transactionRepository;
+    private final AccountClient accountClient;
 
     public TransactionService(
-            TransactionRepository transactionRepository) {
+            TransactionRepository transactionRepository ,AccountClient accountClient) {
         this.transactionRepository = transactionRepository;
+        this.accountClient = accountClient;
     }
 
     public Transaction createTransaction(Transaction transaction) {
@@ -29,19 +35,33 @@ public class TransactionService {
         if (transaction.getAmount() == null ||
                 transaction.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Transaction amount must be positive"
-            );
+                    HttpStatus.BAD_REQUEST, "Invalid amount");
         }
 
-        if (transaction.getAccountId() == null ||
-                transaction.getCurrency() == null ||
-                transaction.getCurrency().isBlank()) {
+        AccountResponse account =
+                accountClient.getAccount(transaction.getAccountId());
+
+        if (!"ACTIVE".equals(account.status())) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Account ID and currency are required"
-            );
+                    HttpStatus.BAD_REQUEST, "Account is blocked");
         }
+
+        if (!account.currency().equalsIgnoreCase(
+                transaction.getCurrency())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Currency mismatch");
+        }
+
+        if (account.balance().compareTo(transaction.getAmount()) < 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Insufficient balance");
+        }
+
+        accountClient.debit(
+                account.id(),
+                transaction.getAmount(),
+                transaction.getCurrency()
+        );
 
         return transactionRepository.save(transaction);
     }
